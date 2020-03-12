@@ -1,0 +1,83 @@
+# Metview Macro
+
+############################
+#                          #
+#   PtRainCDF_MergeSA.mv   #
+#                          #
+############################
+
+
+Perc_list = list() # initialization of the empty variable that will contain all the CDFs in SA fields
+
+for CodeSA = 1 to NumSA do
+    
+    CodeSASTR = left_pad_number(CodeSA,NumDigSA)
+
+    # ------------------------------------------------------- #
+    # Reading the input files containing the CDFs for each EM #
+    # ------------------------------------------------------- #
+
+    print(" ")
+    print("      a. Reading SA n. " & CodeSA & " containing the point rainfall CDF for all raw EMs...")
+    
+    CDF_AllEM_SA = nil
+    for CodeEM = EnsMemS to 2 do
+        CodeEMSTR = left_pad_number(CodeEM,NumDigEM)
+        FileIN = WDIR21 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & CodeSASTR & "/" & NameFile21 & "_" & CodeSASTR & "_" & CodeEMSTR & ".grib"
+        CDF_AllEM_SA = CDF_AllEM_SA & read(FileIN)
+    end for
+    template = CDF_AllEM_SA[1]
+    CDF_AllEM_SA = values(CDF_AllEM_SA)
+
+    
+    # ------------------------------------- #
+    # Computing the percentiles for the CDF #
+    # ------------------------------------- #    
+    
+    print("      b. Computing percentiles...")
+    Perc_sa = percentile(CDF_AllEM_SA, Perc)
+        
+    # Defining the list that will contain the global field for the CDFs
+    Perc_list = Perc_list & list(Perc_sa)
+
+end for
+
+
+# ------------------------------------------ #
+# Merging the SAs containing the percentiles #
+# ------------------------------------------ #    
+
+print(" ")
+print("      c. Merging the " & NumSA & " SAs into a global field")
+
+# Setting the global sample grib
+temp = read(FileIN)
+BaseDate = number((grib_get(temp[1], ["dataDate"]))[1][1])
+BaseTime = number((grib_get(temp[1], ["dataTime"]))[1][1])
+Step = number((grib_get(temp[1], ["stepRange"]))[1][1])
+
+FileGL = read(FileGL)
+FileGL = grib_set(FileGL, ["class", "od", "stream", "enfo", "type", "pf", "expver", 1, "indicatorOfParameter", int(PP_Code), "level", PP_level, "levtype", PP_levtype, "dataDate", BaseDate, "dataTime", BaseTime, "stepRange", Step]) 
+Perc_AllEM_GL_grib = duplicate(FileGL,NumPerc)
+Perc_AllEM_GL_list = values(Perc_AllEM_GL_grib)
+
+# Merging
+for CodePERC = 1 to NumPerc do 
+    tempGL_PERC = nil
+    for CodeSA = 1 to NumSA do
+        tempSA = Perc_list[CodeSA]
+        tempSA_PERC = tempSA[CodePERC]
+        tempGL_PERC = tempGL_PERC & tempSA_PERC
+    end for
+    Perc_AllEM_GL_list[CodePERC] = tempGL_PERC
+end for  
+Perc_AllEM_GL_grib = set_values(Perc_AllEM_GL_grib, Perc_AllEM_GL_list)
+for i = 1 to NumPerc do
+    Perc_AllEM_GL_grib[i] = grib_set_long(Perc_AllEM_GL_grib[i], ["paramId", PP_Code, "numberOfForecastsInEnsemble", NumPerc, "perturbationNumber", i])
+end for
+
+# Saving the output file
+FileOUT = WDIR4 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & NameFile4 & ".grib"
+print(" ")
+print("Saving the output grib file in " & FileOUT)
+write(FileOUT, Perc_AllEM_GL_grib)

@@ -1,0 +1,41 @@
+# Metview Macro
+
+############################
+#                          #
+#   Check_Set_InParam.mv   #
+#                          #
+############################
+
+
+# ------------------------------------------------ #
+# Checking the correctness of the input parameters #
+# ------------------------------------------------ #
+
+# to complete
+
+
+# -------------------------------------------- #
+# Set some variables from the input parameters #
+# -------------------------------------------- #
+
+# General Parameters
+vector_set_default_type(PrecFloat) 
+numEM = EnsMemF - EnsMemS + 1
+AccSTR = left_pad_number(Acc,NumDigAcc)
+SubAreaSTR = left_pad_number(NumSA,NumDigSA)
+
+# Parameters related to the variable to post-processed
+if Var2PP = "Rainfall" then
+    Predictand=[228.128,"sfc",0]
+    Min_Predictand_Value=0.04
+    PP_Param=[82.128,"sfc",0]
+else
+    print("Not other parameters included yet.")
+end if
+PP_Code = PP_Param[1]
+PP_levtype = PP_Param[2]
+PP_level = PP_Param[3]
+
+# Percentiles to compute
+Perc = parse(Perc, ",")
+NumPerc = count(Perc)

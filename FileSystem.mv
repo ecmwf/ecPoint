@@ -1,0 +1,102 @@
+#Metview Macro
+
+#####################
+#                   #
+#   FileSystem.mv   #
+#                   #
+#####################
+
+
+# Main Directories
+ScriptsDir = MainDir & "/Scripts"
+DataBaseDir = MainDir & "/InputDB"
+TempDir = MainDir & "/" & RunMode & "/ecPoint_" & Var2PP & "/" & AccSTR & "/Vers" & CalVers
+WorkDir = TempDir & "/WorkDir"
+OutDir = TempDir & "/Forecasts"
+
+# Subdirectory Tree
+WDIR1 = WorkDir & "/10_Predict_AllREM_GL"
+WDIR21 = WorkDir & "/21_EnsPtRain_SingleREM_SA"
+WDIR22 = WorkDir & "/22_GridRain_ALLREM_GL"
+WDIR23 = WorkDir & "/23_WT_AllREM_GL"
+WDIR3 = WorkDir & "/30_PtRainCDF_SA"
+WDIR4 = WorkDir & "/40_PtRainCDF_GL"
+OUTDIR1 = OutDir & "/Pt_BiasCorr_RainPERC"
+OUTDIR2 = OutDir & "/Grid_BiasCorr_RainVALS"
+OUTDIR3 = OutDir & "/WT"
+
+# Input/Output files' names
+NameFile1 = "Predict"
+NameFile21 = "EnsPtRain"
+NameFile22 = "GridRain"
+NameFile23 = "WT"
+NameFile3 = "PtRainCDF_SA"
+NameFile4 = "PtRainCDF_GL"
+NameFileOUT1 = "Pt_BC_PERC"
+NameFileOUT2 = "Grid_BC_VALS"
+NameFile_OUT3 = "WT"
+
+# Computational and Sample Files
+MapFuncDir = ScriptsDir & "/CompFiles/MapFunc" & "/" & RunMode & "/ecPoint_" & Var2PP & "/" & AccSTR & "/Vers" & CalVers
+SampleDir = ScriptsDir & "/CompFiles/Samples/Grib/ENS_18km"
+FileBP = MapFuncDir & "/BreakPointsWT.txt"
+FileFER = MapFuncDir & "/FERs.txt"
+FileGL = SampleDir & "/Global/Global.grib"
+FileSA = SampleDir & "/SubArea/" & SubAreaSTR & "/SubArea.grib"
+
+
+# --------------------------- #
+# Creation of the File System #
+# --------------------------- #
+
+for BaseDate = BaseDateS to BaseDateF do
+    
+    BaseDateSTR = string(BaseDate, "yyyymmdd")
+    
+    for BaseTime = BaseTimeS to BaseTimeF by BaseTime_Disc do
+        
+        BaseTimeSTR = left_pad_number(BaseTime,NumDigBT)       
+        
+        for StepS = StepS_Start to StepS_Final by Step_Disc do
+            
+            StepF = StepS + Acc
+            StepFSTR = left_pad_number(StepF,NumDigStep)
+            
+            WDIR22_temp = WDIR22 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR
+            WDIR23_temp = WDIR23 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR
+            WDIR4_temp = WDIR4 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR
+            OutDir1_temp = OUTDIR1 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR
+            OutDir2_temp = OUTDIR2 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR
+            OutDir3_temp = OUTDIR3 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR
+            shell("umask 002; mkdir -p " & WDIR22_temp)
+            shell("umask 002; mkdir -p " & WDIR23_temp)
+            shell("umask 002; mkdir -p " & WDIR4_temp)
+            shell("umask 002; mkdir -p " & OutDir1_temp)
+            shell("umask 002; mkdir -p " & OutDir2_temp)
+            shell("umask 002; mkdir -p " & OutDir3_temp)
+            
+            for SubArea = 1 to NumSA do
+            
+                SubAreaSTR = left_pad_number(SubArea,NumDigSA)
+                
+                WDIR21_temp = WDIR21 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & SubAreaSTR
+                WDIR3_temp = WDIR3 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & SubAreaSTR
+                shell("umask 002; mkdir -p " & WDIR21_temp)
+                shell("umask 002; mkdir -p " & WDIR3_temp)
+            
+            end for
+            
+            for EnsMem = EnsMemS to  EnsMemF do
+                
+                EnsMemSTR = left_pad_number(EnsMem,NumDigEM)
+                
+                WDIR1_temp = WDIR1 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & EnsMemSTR
+                shell("umask 002; mkdir -p " & WDIR1_temp)
+                
+            end for      
+
+        end for    
+    
+    end for
+    
+end for

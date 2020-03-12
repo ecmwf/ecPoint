@@ -1,0 +1,162 @@
+# Metview Macro
+
+################################
+#                              #
+#   EnsPtRain_GridRain_WT.mv   #
+#                              #
+################################
+
+
+# --------------------------------------------------------------------- #
+# Importing breakpoints and forecast error ratios for each weather type #
+# --------------------------------------------------------------------- #
+
+TableBP = read_table(
+          table_delimiter             : ",",
+          table_header_row            : 1,
+          table_filename              : FileBP
+          )
+codesWT = values(TableBP,1) # weather type codes
+nPRED = (count(TableBP) - 1)/2 # number of predictors
+nWT = count(codesWT) # number of weather types
+
+TableFER = read_table(
+          table_delimiter             : ",",
+          table_header_row            : 1,
+          table_filename              : FileFER
+          )
+nFER = count(TableFER) - 1 # number of FERs and size of the new ensemble
+FERs = matrix(nWT,nFER)
+for j = 1 to nFER do
+    temp = values(TableFER,j+1)
+    for i = 1 to nWT do
+        FERs[i,j] = temp[i]
+    end for
+end for
+
+##########################################################################
+
+
+for CodeEM = EnsMemS to EnsMemF do
+    
+    CodeEMSTR = left_pad_number(CodeEM,NumDigEM)
+    print(" ")
+    print("    EM n." & CodeEMSTR)
+
+
+    # ----------------------------------------------------------- #
+    # Reading the input file containing predictand and predictors #
+    # ----------------------------------------------------------- #
+
+    FileIN = WDIR1 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & CodeEMSTR & "/" & NameFile1 & "_" & CodeEMSTR & ".grib"
+    print("      a. Reading predictant and predictors from '" & FileIN & "'")
+    pred = read(FileIN)
+    
+    Template = pred[1]
+    BaseDate = number((grib_get(pred[1], ["dataDate"]))[1][1])
+    BaseTime = number((grib_get(pred[1], ["dataTime"]))[1][1])
+    Step = number((grib_get(pred[1], ["stepRange"]))[1][1])
+    CodeEM = number((grib_get(pred[1], ["number"]))[1][1])
+    
+    pred = values(pred)
+    predictand = pred[1]
+    predictors = pred[2,count(pred)]
+    predictand = (predictand >= Min_Predictand_Value) * predictand # the values that are considered too small to be reliable due to packing issues are turn into zeros
+    
+   
+    # ------------------------------------------- #
+    # Post-processing the single ensemble members #
+    # ------------------------------------------- #
+
+    print("      b. Post-processing the raw EM with " & nWT & " weather types (WT)...")
+    CDF_SingleENS_AllWT = 0  
+    CodesWT_SingleENS_AllWT = 0
+    nGridGL = count(predictand)
+    
+    for CodeWT = 1 to nWT do
+        
+        # Pinpointing the WT location in the global field
+        tempWT = vector(nGridGL) + 1 # creating a neutral vector with the same dimensions of a GL field (it contains only ones for the first loop)
+        ind_inf = 2 # the first row is excluded as it contains the WT codes
+        ind_sup = 3
+        
+        for CodePred = 1 to nPRED do # verifing the BPs for the considered WT
+            
+            thr_inf = values(TableBP,ind_inf)[CodeWT]
+            thr_sup = values(TableBP,ind_sup)[CodeWT]
+
+            tempWT1 = (predictors[CodePred]>=thr_inf and predictors[CodePred]<thr_sup)
+            tempWT = tempWT * tempWT1 # field with 0s and 1s (there are 1s only where the BPs for the WT are verified)
+            
+            ind_inf = ind_inf + 2
+            ind_sup = ind_inf + 1
+            
+        end for
+        
+        # Creating the global field that contains the codes of all WTs
+        CodesWT_SingleENS_AllWT = CodesWT_SingleENS_AllWT + (codesWT[CodeWT] * tempWT)
+        
+        # Creating the new ensemble (CDF), for pt rain values, from each raw ensemble member for all WTs
+        PredVals_SingleENS_SingleWT = predictand * tempWT
+        CDF_SingleENS_SingleWT = list() # inizializating an empty variable
+        for i = 1 to nFER do
+            CDF_SingleENS_SingleWT = CDF_SingleENS_SingleWT & list(PredVals_SingleENS_SingleWT * (FERs[CodeWT,i]+1))
+        end for
+        CDF_SingleENS_AllWT = CDF_SingleENS_AllWT + CDF_SingleENS_SingleWT
+
+    end for
+
+
+    # ----------------------- #
+    # Saving the output files #
+    # ----------------------- #
+    
+    # Grid-bias corrected rainfall values (global field)
+    FileOUT2 = WDIR22 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & NameFile22 & "_" & CodeEMSTR & ".grib"
+    print("      c. Saving the grid-bias corrected rainfall values in '" & FileOUT2 & "'")
+    Grid_BiasCorr = sum(set_values(duplicate(Template,nFER), CDF_SingleENS_AllWT))/nFER # it computes the mean of the values in the CDF, for each grid point (global field with 1 fieldset)
+    write(FileOUT2, Grid_BiasCorr)
+
+
+    # Weather type's code (global field)
+    FileOUT3 = WDIR23 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & NameFile23 & "_" & CodeEMSTR & ".grib"   
+    print("      d. Saving the WT codes in " & FileOUT3)
+    Code4NoWT = nil # WT code for those grid points with too small values due to packing issues
+    for i = 1 to nPRED do
+        Code4NoWT = Code4NoWT & "9"
+    end for
+    WT_Codes = ((predictand<Min_Predictand_Value)*number(Code4NoWT)) + ((predictand>=Min_Predictand_Value)*CodesWT_SingleENS_AllWT)
+    WT_Codes = set_values(Template, WT_Codes)
+    write(FileOUT3, WT_Codes)
+    
+    
+    # CDF for point rainfall values (sub-area field)
+    PathOUT1 = WDIR21 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR
+    print("      e. Saving the point rainfall CDF, splitting it up in " & int(NumSA) & " sub-areas (SA), in '" & PathOUT1 & "'")
+    PP_Param_Code = PP_Param[1]
+    PP_Param_Levtype = PP_Param[2]
+    PP_Param_Level = PP_Param[3]
+    sampleSA = read(FileSA)
+    sampleSA = grib_set(sampleSA, ["class", "od", "stream", "enfo", "type", "pf", "number", CodeEM, "expver", 1, "paramId", int(PP_Param_Code), "level", PP_Param_Level, "levtype", PP_Param_Levtype, "dataDate", BaseDate, "dataTime", BaseTime, "stepRange", Step])
+    nGridSA = count(values(sampleSA)) # number of grid points in the sub-area field
+    sampleSA_grib = duplicate(sampleSA,nFER) # create the grib files that will contain the CDF in the SA field
+    sampleSA_list = values(sampleSA_grib)
+    
+    for CodeSA = 1 to NumSA do
+        
+        CodeSASTR = left_pad_number(CodeSA,NumDigSA)
+        
+        for i = 1 to nFER do
+            temp_gl = CDF_SingleENS_AllWT[i]
+            gridSA_i = 1 + nGridSA * CodeSA - nGridSA
+            gridSA_f = gridSA_i + nGridSA - 1
+            sampleSA_list[i] = temp_gl[gridSA_i,gridSA_f]
+        end for
+        
+        sampleSA_grib = set_values(sampleSA_grib, sampleSA_list) # converting the list to grib
+        FileOUT1 = PathOUT1 & "/" & CodeSASTR & "/" & NameFile21 & "_" & CodeSASTR & "_" & CodeEMSTR & ".grib"
+        write(FileOUT1, sampleSA_grib)
+
+    end for
+
+end for
