@@ -34,7 +34,7 @@
 #
 # CalVers (string): version of the calibration files (it uses the SemVer standard for versioning, https://semver.org/)
 #                   Current valid values:
-#                     - Rainfall, 12-hourly: "1.0.0" / "1.1.0"
+#                     - Rainfall, 12-hourly: "1.0.0"
 #
 # RunMode (string): mode with which the code is running.
 #                   No restrictions on the value for this parameter.
@@ -89,7 +89,7 @@
 # PARAMETERS FOR THE VARIABLE TO POST-PROCESS
 Var2PP = "Rainfall"
 Acc = 12
-CalVers = "1.1.0"
+CalVers = "1.0.0"
 RunMode = "Dev"
 
 # FORECAST PARAMETERS
