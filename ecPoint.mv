@@ -1,0 +1,169 @@
+# Metview Macro
+
+#######################################################
+
+                #########                  
+                #       #               
+                #       #                          
+                #       #           #              #
+######  ######  #########              #           #
+#    #  #       #          #######  #  #######  #######
+######  #       #          #     #  #  #     #     #
+#       #       #          #     #  #  #     #     #  
+######  ######  #          #######  #  #     #     ###
+
+##################### Version 2.0 #####################
+
+
+print("*****************************************************")
+print("First Phase: Creation Environment for Post-Processing")
+print("*****************************************************")
+
+# ************************ #
+# Reading Input Parameters #
+# ************************ #
+
+print(" ")
+print("- Reading input parameters...")
+include "InParam.mv"
+
+# ************************* #
+# Checking Input Parameters #
+# ************************* #
+
+print("- Checking input parameters...")
+include "Check_Set_InParam.mv"
+
+# ********************* #
+# Creating File System  #
+# ********************* #
+
+print("- Creating the file system to use in the post-processing...")
+include "FileSystem.mv"
+
+##################################################################
+
+
+print(" ")
+print(" ")
+print("*****************************")
+print("Second Phase: Post-Processing")
+print("*****************************")
+
+print("__________________________________")
+print("|            ecPoint             |")
+print("|  (Forecasts for Point Values)  |")
+print("|        Code Version 2.0        |")
+print("|                                |")
+print("|        ecPoint-" & Var2PP & "        |")
+print("|     Calibration Version" & CalVers & "     |")
+print("|________________________________|")
+
+
+for BaseDate = BaseDateS to BaseDateF do
+    
+    BaseDateSTR = string(BaseDate, "yyyymmdd")
+    
+    for BaseTime = BaseTimeS to BaseTimeF by BaseTime_Disc do
+        
+        BaseTimeSTR = left_pad_number(BaseTime,NumDigBT)    
+        
+        for StepS = StepS_Start to StepS_Final by Step_Disc do
+        
+            StepF = StepS + Acc
+            StepFSTR = left_pad_number(StepF,NumDigStep)
+            
+            print(" ")
+            print(" ")
+            print("******************************")
+            print(BaseDateSTR & " - " & BaseTimeSTR & " UTC - (t+" & string(StepS) & ",t+" & string(StepF) & ")")
+            print("******************************")
+            
+            
+            # *********************************** #
+            # Predictand & Predictors Computation #
+            # *********************************** #
+            # Predictand and predictors computation for all raw Ensemble Members (EM) and GLobal (GL) fields.
+            
+            print(" ")
+            print("1. Predictand and predictors computation")
+            include "./Predict.mv"
+            
+            
+            # ********************************************* #
+            # Post-Processing of the single ensemble member #
+            # ********************************************* #
+            # Creation of the new ensembles for point rainfall values, for a single raw EM and a single Sub-Area (SA).
+            # It also creates the bias corrected values at grid scale and the WT fields, for a single EM and GLobal (GL) field. 
+            
+            print(" ")
+            print("2. Post-Processing of the single ensemble members (EM)")
+            include "EnsPtRain_GridRain_WT.mv"
+                
+            
+            # ********************************* #
+            # Percentiles Computation & Merging #
+            # ********************************* #
+            # Percentiles computation for point rainfall values, for all raw EMs and single SAs.
+            # Finally, merging of all SAs into a GL field.
+            
+            print(" ")
+            print("3. Percentiles Computation & Merging")
+            include "PtRainPerc_MergeSA.mv"
+            
+            
+            # ************************************** #
+            # Moving output files to output database #
+            # ************************************** #
+            
+            print(" ")
+            print("4. Moving the output files from the working directory to the output database")
+            
+            # Point Rainfall CDFs
+            FileIN = WDIR4 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & NameFile4 & ".grib"
+            FileOUT = OUTDIR1 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & NameFileOUT1 & "_" & AccSTR & "_" & BaseDateSTR & "_" & BaseTimeSTR & "_" & StepFSTR & ".grib" 
+            shell("mv " & FileIN & " " & FileOUT)
+            
+            # Bias Corrected Rainfall at Grid Scale
+            FileIN = WDIR22 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & NameFile22 & "_??.grib"
+            FileOUT = OUTDIR2 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & NameFileOUT2 & "_" & AccSTR & "_" & BaseDateSTR & "_" & BaseTimeSTR & "_" & StepFSTR & ".grib" 
+            shell("grib_copy " & FileIN & " " & FileOUT)
+            
+            # WTs
+            FileIN = WDIR23 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & NameFile23 & "_??.grib"
+            FileOUT = OUTDIR3 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & NameFileOUT3 & "_" & AccSTR & "_" & BaseDateSTR & "_" & BaseTimeSTR & "_" & StepFSTR & ".grib" 
+            shell("grib_copy " & FileIN & " " & FileOUT)
+            
+        end for
+    
+    end for
+
+end for
+
+
+# ****************************** #
+# Removing temporary directories #
+# ****************************** #
+
+shell("rm -rf " & DataBaseDir)
+shell("rm -rf " & WorkDir)    
+
+print("Post-Processing Completed!")
+
+                           
+###############################################################################################
+# EXTERNAL FUNCTIONS
+
+function left_pad_number (num: number, num_digits: number)
+
+    num_string = ''  #  initialise the string to empty
+
+    for pow = num_digits to 1 by -1 do
+        digit = int(num / (10^(pow-1)))
+        num_string = num_string & digit
+        num = num - digit *(10^(pow-1))
+    end for
+
+    return num_string
+
+end left_pad_number
