@@ -1,0 +1,124 @@
+# Metview Macro
+
+#######################################################
+
+                #########                  
+                #       #               
+                #       #                          
+                #       #           #              #
+######  ######  #########              #           #
+#    #  #       #          #######  #  #######  #######
+######  #       #          #     #  #  #     #     #
+#       #       #          #     #  #  #     #     #  
+######  ######  #          #######  #  #     #     ###
+
+##################### Version 2.0 #####################
+#                                                     #
+#                  INPUT PARAMETERS                   #
+#                                                     #
+#######################################################
+
+
+#################################
+# INPUT PARAMETERS' DESCRIPTION #
+#################################
+
+# Var2PP (string): indicates which parameter will be post-processed
+#                  Current valid values:
+#                    - "Rainfall" (accumulated variable)
+#
+# Acc (number, integer): accumulation period for "Var2PP" (in hours).
+#                        Current valid values:
+#                          - Rainfall: 12
+#                          - For not accumulated variables: 0
+#
+# CalVers (string): version of the calibration files (it uses the SemVer standard for versioning, https://semver.org/)
+#                   Current valid values:
+#                     - Rainfall, 12-hourly: "1.0.0" / "1.1.0"
+#
+# RunMode (string): mode with which the code is running.
+#                   No restrictions on the value for this parameter.
+#
+# BaseDateS (date): start date of the post-processing period (in the YYYY-MM-DD format)
+#
+# BaseDateF (date): final date of the post-processing period (in the YYYY-MM-DD format)
+#
+# BaseTimeS (number, integer): first model run to consider in a day (in UTC)
+#
+# BaseTimeF (number, integer): last model run to consider in a day (in UTC)
+#
+# BaseTime_Disc (number, integer): interval between model runs (in hours)
+#
+# StepS_Start (number, integer): first step, lead-time, to consider (in hours)
+#
+# StepS_Final (number, integer): last step, lead-time, to consider (in hours)
+#
+# Step_Disc (number, integer): interval between steps (in hours)
+#
+# EnsMemS (number, integer): first ensemble member to consider (0 correspond to the "Control" run; perturbed forecast go from 1 to n)
+#
+# EnsMemF (number, integer): last ensemble member to consider
+# 
+# NumSA (number, integer): number of sub-area to consider for the computation of the percentiles
+#                          Current valid values: 5 / 10/ 20 sub-areas
+# 
+# Perc (string): percentiles to compute (separate with commas)
+# 
+# MainDir (number, integer): main working directory
+# 
+# NumDigBT (number, integer): number of digits to indicate "base times codes" as strings.
+# 
+# NumDigStep (number, integer): number of digits to indicate "step codes" as strings.
+# 
+# NumDigAcc (number, integer): number of digits to indicate "accumulation codes" as strings.
+# 
+# NumDigEM (number, integer): number of digits to indicate "ensemble member codes" as strings.
+# 
+# NumDigSA (number, integer): number of digits to indicate "sub-area codes" as strings.
+# 
+# PrecFloat (number, integer): precision floating-point format for all vectors 
+#                              Current valid values:
+#                                - 32 bit for single-precision
+#                                - 64 bit for double precision
+
+
+############################
+# INPUT PARAMETERS' VALUES #
+############################
+
+# PARAMETERS FOR THE VARIABLE TO POST-PROCESS
+Var2PP = "Rainfall"
+Acc = 12
+CalVers = "1.1.0"
+RunMode = "Dev"
+
+# FORECAST PARAMETERS
+BaseDateS = 2020-02-19
+BaseDateF = 2020-02-19
+BaseTimeS = 00
+BaseTimeF = 12
+BaseTime_Disc = 12
+StepS_Start = 0
+StepS_Final = 234
+Step_Disc = 6
+EnsMemS = 0
+EnsMemF = 50
+
+# SUB-AREA PARAMETERS
+NumSA = 10
+
+# PERCENTILES PARAMETERS
+Perc="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99"
+
+# MAIN DIRECTORY
+MainDir = "/vol/ecpoint/mofp/ecPoint_2.0"
+
+# NUMBER OF DIGITS FOR ARRAYS
+NumDigBT = 2
+NumDigStep=3
+NumDigAcc=3
+NumDigEM=2
+NumDigSA=2
+
+# VECTORS PRECISION
+PrecFloat = 'float32' 
