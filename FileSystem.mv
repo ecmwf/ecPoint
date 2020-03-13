@@ -47,7 +47,7 @@ NameFile_OUT3 = "WT"
 
 # Computational and Sample Files
 MapFuncDir = ScriptsDir & "/CompFiles/MapFunc" & "/" & RunMode & "/ecPoint_" & Var2PP & "/" & AccSTR & "/Vers" & CalVers
-SampleDir = ScriptsDir & "/CompFiles/Samples/Grib/ENS_18km"
+SampleDir = ScriptsDir & "/CompFiles/Samples/ECMWF_ENS_18km"
 FileBP = MapFuncDir & "/BreakPointsWT.txt"
 FileCF = MapFuncDir & "/CorrectingFactors.txt"
 FileRAF = MapFuncDir & "/RedAbsFreqWT.txt"
