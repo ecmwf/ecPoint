@@ -1,0 +1,185 @@
+# Metview Macro
+
+########################
+#                      #
+#      Predict.mv      #
+#                      #
+#   ecPoint-Rainfall   #
+#     Version 1.2      #
+#                      #
+########################   
+
+print("   (Rainfall - Version 1.2)")
+
+# Codes for the header of the grib file that will store the predictand and the predictors
+MyPredicts = [228.128, 143.128, 228.128, 10.128, 59.128, 228022]
+MyLevelTypes = ["sfc", "sfc", "sfc", "pl", "sfc", "sfc"]
+MyLevels = [0,0,0,700,0,0]
+#########################################################################################
+
+
+# ------------------------------------ #
+# Computation of the steps to consider #
+# ------------------------------------ #
+
+StepF = StepS + Acc
+step1 = StepS
+step2 = step1 + Acc/2
+step3 = StepF
+step1STR = left_pad_number(step1,NumDigStep)
+step2STR = left_pad_number(step2,NumDigStep)
+step3STR = left_pad_number(step3,NumDigStep)
+
+if StepF <= 24 then
+    step1SR = 0
+    step2SR = 24
+else
+    step1SR = StepF - 24
+    step2SR = StepF
+end if
+step1SR_STR = left_pad_number(step1SR,NumDigStep)
+step2SR_STR = left_pad_number(step2SR,NumDigStep)
+
+
+# ----------------------------------------------------- #
+# Check the existance of the data in the input database #
+# ----------------------------------------------------- #
+
+WDIR_InDB = DataBaseDir & "/" & BaseDateSTR & BaseTimeSTR # Input Database
+File_tp_1 = WDIR_InDB & "/" & step1STR & "/" & "228_" & step1STR & ".grib"
+File_tp_3 = WDIR_InDB & "/" & step3STR & "/" & "228_" & step3STR & ".grib"
+File_cp_1 = WDIR_InDB & "/" & step1STR & "/" & "143_" & step1STR & ".grib"
+File_cp_3 = WDIR_InDB & "/" & step3STR & "/" & "143_" & step3STR & ".grib"
+File_u700_1 = WDIR_InDB & "/" & step1STR & "/" & "131_" & step1STR & ".grib"
+File_u700_2 = WDIR_InDB & "/" & step2STR & "/" & "131_" & step2STR & ".grib"
+File_u700_3 = WDIR_InDB & "/" & step3STR & "/" & "131_" & step3STR & ".grib"
+File_v700_1 = WDIR_InDB & "/" & step1STR & "/" & "132_" & step1STR & ".grib"
+File_v700_2 = WDIR_InDB & "/" & step2STR & "/" & "132_" & step2STR & ".grib"
+File_v700_3 = WDIR_InDB & "/" & step3STR & "/" & "132_" & step3STR & ".grib"
+File_cape_1 = WDIR_InDB & "/" & step1STR & "/" & "59_" & step1STR & ".grib"
+File_cape_2 = WDIR_InDB & "/" & step2STR & "/" & "59_" & step2STR & ".grib"
+File_cape_3 = WDIR_InDB & "/" & step3STR & "/" & "59_" & step3STR & ".grib"
+File_sr_1 = WDIR_InDB & "/" & step1SR_STR & "/" & "22_" & step1SR_STR & ".grib"
+File_sr_2 = WDIR_InDB & "/" & step2SR_STR & "/" & "22_" & step2SR_STR & ".grib"
+
+if not(exist(File_tp_1)) or not(exist(File_tp_3)) or not(exist(File_cp_1)) or not(exist(File_cp_3)) or not(exist(File_u700_1)) or not(exist(File_u700_2)) or not(exist(File_u700_3)) or not(exist(File_v700_1)) or not(exist(File_v700_2)) or not(exist(File_v700_3)) or not(exist(File_cape_1)) or not(exist(File_cape_2)) or not(exist(File_cape_3)) or not(exist(File_sr_1)) or not(exist(File_sr_2)) then
+    fail("Some input data missing. Check the input database.")
+end if
+
+
+# ------------------------------------- #
+# Predictand and predictors computation #
+# ------------------------------------- #
+
+# Predictand: Total Precipitation
+# N.B.: the predictand is always the first field saved in the grib file
+
+print(" ")
+print("     a. Processing the predictand...")
+print("        Total Precipitation (" & MyPredicts[1] & ", " & MyLevelTypes[1] & ", " & MyLevels[1] & ")")
+
+tp_1 = read(File_tp_1)
+tp_3 = read(File_tp_3)
+tp = (tp_3 - tp_1) * 1000
+for i = EnsMemS to EnsMemF do # setting some parameters in the grib header
+    tp[i+1] = grib_set_string(tp[i+1],["type", "pf"])
+    tp[i+1] = grib_set_double(tp[i+1], ["perturbationNumber", i, "step", StepF]) 
+    tp[i+1] = grib_set_long(tp[i+1], ["paramId", MyPredicts[1]])
+end for
+pred = tp 
+
+
+# Predictors
+print(" ")
+print("     b. Processing the predictors...")
+
+# --------------------------------- # 
+# 1. Convective Precipitation Ratio
+print("        -) Convective Precipitation Ratio (" & MyPredicts[2] & ", " & MyLevelTypes[2] & ", " & MyLevels[2] & ")")
+
+cp_1 = read(File_cp_1)
+cp_3 = read(File_cp_3)
+cp = (cp_3 - cp_1) * 1000
+tp_bitmap = 9999*(tp=0) + tp*(tp<>0) # Bitmap the values were tp=0 to compute cpr=cp/tp
+cpr_bitmap = cp / tp_bitmap 
+cpr = cpr_bitmap*(tp_bitmap<>9999)
+for i = EnsMemS to EnsMemF do # setting some parameters in the grib header
+    cp[i+1] = grib_set_string(cp[i+1],["type", "pf"])
+    cp[i+1] = grib_set_double(cp[i+1], ["perturbationNumber", i, "step", StepF]) 
+    cp[i+1] = grib_set_long(cp[i+1], ["paramId", MyPredicts[2]])
+end for
+pred = pred & cpr
+
+# ----------------------------------------- #
+# 2. Total Precipitation (already computed)
+print("        -) Total Precipitation (" & MyPredicts[3] & ", " & MyLevelTypes[3] & ", " & MyLevels[3] & ")")
+pred = pred & tp
+
+# ------------------------- #
+# 3. Wind Speed at 700 mbar
+print("        -) Wind Speed at 700 mbar (" & MyPredicts[4] & ", " & MyLevelTypes[4] & ", " & MyLevels[4] & ")")
+u700_1 = read(File_u700_1)
+u700_2 = read(File_u700_2)
+u700_3 = read(File_u700_3)
+u700 = (0.5*u700_1 + u700_2 + 0.5*u700_3)/2
+v700_1 = read(File_v700_1)
+v700_2 = read(File_v700_2)
+v700_3 = read(File_v700_3)
+v700 = (0.5*v700_1 + v700_2 + 0.5*v700_3)/2
+wspd700 = sqrt(u700^2 + v700^2)
+for i = EnsMemS to EnsMemF do # setting some parameters in the grib header
+    wspd700[i+1] = grib_set_string(wspd700[i+1],["type", "pf"])
+    wspd700[i+1] = grib_set_double(wspd700[i+1], ["perturbationNumber", i, "step", StepF]) 
+    wspd700[i+1] = grib_set_long(wspd700[i+1], ["paramId", MyPredicts[4]])
+end for
+pred = pred & wspd700
+
+# ------- #
+# 4. CAPE
+print("        -) CAPE (" & MyPredicts[5] & ", " & MyLevelTypes[5] & ", " & MyLevels[5] & ")")
+cape_1 = read(File_cape_1)
+cape_2 = read(File_cape_2)
+cape_3 = read(File_cape_3)
+cape = (0.5*cape_1 + cape_2 + 0.5*cape_3)/2
+for i = EnsMemS to EnsMemF do # setting some parameters in the grib header
+    cape[i+1] = grib_set_string(cape[i+1],["type", "pf"])
+    cape[i+1] = grib_set_double(cape[i+1], ["perturbationNumber", i, "step", StepF]) 
+    cape[i+1] = grib_set_long(cape[i+1], ["paramId", MyPredicts[5]])
+end for
+pred = pred & cape
+
+# ------------------------------------------- #
+# 5. Solar Radiation (24-hourly Accumulation)
+print("        -) Daily Accumulation of Solar Radiation (" & MyPredicts[6] & ", " & MyLevelTypes[6] & ", " & MyLevels[6] & ")")
+sr_1 = read(File_sr_1)
+sr_2 = read(File_sr_2)
+sr24h = (sr_2 - sr_1) / 86400
+for i = EnsMemS to EnsMemF do # setting some parameters in the grib header
+    sr24h[i+1] = grib_set_string(sr24h[i+1],["type", "pf"])
+    sr24h[i+1] = grib_set_double(sr24h[i+1], ["perturbationNumber", i, "step", StepF]) 
+    sr24h[i+1] = grib_set_long(sr24h[i+1], ["paramId", MyPredicts[6]])
+end for            
+pred = pred & sr24h
+
+
+# -------------------------------- #
+# Saving predictand and predictors #
+# -------------------------------- #
+
+print(" ")
+print("     c. Saving predictand and predictors, splitting them in the " & string(numEM) & " EMs...")
+
+for indEM = EnsMemS to EnsMemF do
+
+    indEMSTR = left_pad_number(indEM,NumDigEM) 
+    
+    temp = nil
+    for indPred = 1 to count(MyPredicts) do # selection of the parameters for the same EM
+        ind = (((numEM * indPred) + 1) - numEM) + indEM
+        temp = temp & pred[ind]
+    end for
+    
+    FileOUT = WDIR1 & "/" & BaseDateSTR & BaseTimeSTR & "/" & StepFSTR & "/" & indEMSTR & "/" & NameFile1 & "_" & indEMSTR & ".grib"
+    write(FileOUT, temp)
+    
+end for
