@@ -10,7 +10,6 @@ The main ecPoint outputs are provided in grib files and consist of:
 ## Repository Content
 1. ecPoint code (written in an ECMWF proprietary language called "Metview")
 2. Calibration "mapping function" files (computed using [ecPoint-Calibrate](https://github.com/esowc/ecPoint-Calibrate/tree/master))
-3. Test Data (one day of data, with input and output files)
 
 ## Getting Started
 
@@ -20,6 +19,9 @@ The main ecPoint outputs are provided in grib files and consist of:
 Information about Metview and how to install it can be found [here](https://confluence.ecmwf.int/display/METV/Metview) and in the [Metview-Python GitHub](https://github.com/ecmwf/metview-python) repository. 
 Versions from Metview 5 are required.
 
+**Test Data**
+Before running ecPoint, the user might want to download the test data, available from Zenodo at the following link:
+
 ### Running ecPoint (in series)
 ```sh
 $ vi InParam.mv # Modify the input parameters as needed
@@ -28,4 +30,4 @@ $ metview -b ecPoint.mv # execute code in batch mode
 N.B: depending on the chosen settings, ecPoint might take a long time to run in series. In such a case, the user might consider parallel running.
 
 ## Versioning
-ecPoint uses the [SemVer](https://semver.org/) standard for versioning. The available ecPoint versions are provided here.
+ecPoint uses the [SemVer](https://semver.org/) standard for versioning. The available ecPoint versions are provided [here](https://github.com/ecmwf/ecPoint/releases).
