@@ -15,11 +15,11 @@ The main ecPoint outputs are provided in grib files and consist of:
 
 ### Prerequisites
 
-**Metview** 
+**Metview**   
 Information about Metview and how to install it can be found [here](https://confluence.ecmwf.int/display/METV/Metview) and in the [Metview-Python GitHub](https://github.com/ecmwf/metview-python) repository. 
 Versions from Metview 5 are required.
 
-**Test Data**
+**Test Data**  
 Before running ecPoint, the user might want to download the test data, available from Zenodo at the following link:
 
 ### Running ecPoint (in series)
