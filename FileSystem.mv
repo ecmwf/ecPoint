@@ -49,7 +49,8 @@ NameFile_OUT3 = "WT"
 MapFuncDir = ScriptsDir & "/CompFiles/MapFunc" & "/" & RunMode & "/ecPoint_" & Var2PP & "/" & AccSTR & "/Vers" & CalVers
 SampleDir = ScriptsDir & "/CompFiles/Samples/Grib/ENS_18km"
 FileBP = MapFuncDir & "/BreakPointsWT.txt"
-FileFER = MapFuncDir & "/FERs.txt"
+FileCF = MapFuncDir & "/CorrectingFactors.txt"
+FileRAF = MapFuncDir & "/RedAbsFreqWT.txt"
 FileGL = SampleDir & "/Global/Global.grib"
 FileSA = SampleDir & "/SubArea/" & SubAreaSTR & "/SubArea.grib"
 
