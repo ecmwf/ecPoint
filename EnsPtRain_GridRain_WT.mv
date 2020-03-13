@@ -1,14 +1,5 @@
 # Metview Macro
 
-#  **************************** LICENSE START ***********************************
-# 
-#  Copyright 2020 ECMWF. This software is distributed under the terms
-#  of the Apache License version 2.0. In applying this license, ECMWF does not
-#  waive the privileges and immunities granted to it by virtue of its status as
-#  an Intergovernmental Organization or submit itself to any jurisdiction.
-# 
-#  ***************************** LICENSE END ************************************
-
 ################################
 #                              #
 #   EnsPtRain_GridRain_WT.mv   #
@@ -29,17 +20,24 @@ codesWT = values(TableBP,1) # weather type codes
 nPRED = (count(TableBP) - 1)/2 # number of predictors
 nWT = count(codesWT) # number of weather types
 
-TableFER = read_table(
+TableCF = read_table(
           table_delimiter             : ",",
-          table_header_row            : 1,
-          table_filename              : FileFER
+          table_header_row            : 5,
+          table_filename              : FileCF
           )
-nFER = count(TableFER) - 1 # number of FERs and size of the new ensemble
-FERs = matrix(nWT,nFER)
-for j = 1 to nFER do
-    temp = values(TableFER,j+1)
+CorrectFact = values(TableCF,2) # values of the correcting factors
+nMF = count(CorrectFact) # number of multiplying factors
+
+TableRAF = read_table(
+           table_delimiter             : ",",
+           table_header_row            : 5,
+           table_filename              : FileRAF
+           )
+RedAbsFreq = matrix(nWT,nMF)
+for j = 1 to nMF do
+    temp = values(TableRAF,j+1)
     for i = 1 to nWT do
-        FERs[i,j] = temp[i]
+        RedAbsFreq[i,j] = temp[i]
     end for
 end for
 
@@ -108,9 +106,14 @@ for CodeEM = EnsMemS to EnsMemF do
         # Creating the new ensemble (CDF), for pt rain values, from each raw ensemble member for all WTs
         PredVals_SingleENS_SingleWT = predictand * tempWT
         CDF_SingleENS_SingleWT = list() # inizializating an empty variable
-        for i = 1 to nFER do
-            CDF_SingleENS_SingleWT = CDF_SingleENS_SingleWT & list(PredVals_SingleENS_SingleWT * (FERs[CodeWT,i]+1))
-        end for
+        for CodeMF = 1 to nMF do
+            valMultFac = CorrectFact[CodeMF]
+            temp = [PredVals_SingleENS_SingleWT * valMultFac] # convert the vector in a list so it is possible to concatenate the vectors
+            nRep = RedAbsFreq[CodeWT,CodeMF]
+            for i = 1 to nRep do
+                CDF_SingleENS_SingleWT = CDF_SingleENS_SingleWT & temp
+            end for
+        end for 
         CDF_SingleENS_AllWT = CDF_SingleENS_AllWT + CDF_SingleENS_SingleWT
 
     end for
