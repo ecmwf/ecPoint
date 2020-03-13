@@ -20,7 +20,10 @@ Information about Metview and how to install it can be found [here](https://conf
 Versions from Metview 5 are required.
 
 **Test Data**  
-Before running ecPoint, the user might want to download the test data, available from Zenodo at the following link: 10.5281/zenodo.3708501
+Before running ecPoint, the user might want to download the test data from Zenodo: 
+1. ecPoint Vers1.0.0 and Vers2.0.0: 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3708501.svg)](https://doi.org/10.5281/zenodo.3708501)
+
 
 ### Running ecPoint (in series)
 ```sh
